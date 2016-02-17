@@ -10,7 +10,7 @@ $ ./wbuild.py cookies.txt
 
 A cookies file should be in Netscape compatible format. A list of trasnlations, original fragments, translated fragments will be printed to stdout.
 
-A script output can be diff'ed with files produced by [What If?'s grabbing tool](https://github.com/whatifrussian/what_if_parse).
+A script output can be diff'ed with files produced by [What If? grabbing tool](https://github.com/whatifrussian/what_if_parse).
 
 ## License
 
