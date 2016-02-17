@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+
+
+import os
+import sys
+import http.cookiejar
+import logging
+import re
+import lxml.html
+import requests
+from requests.exceptions import RequestException, BaseHTTPError
+from bs4 import BeautifulSoup
+
+
+ARGS_ERROR_EXIT_CODE = 1
+HTTP_ERROR_EXIT_CODE = 2
+
+
+class HttpUtils:
+    class GetPageError(Exception):
+        """ The exception raised when smth went wrong in 'get_page' function. """
+        def __init__(self, desc, url):
+            super().__init__(desc, url)
+            self.desc = desc
+            self.url = url
+
+        def __str__(self):
+            tmpl = 'The error "%s" occured while getting the page %s'
+            return tmpl % (self.desc, self.url)
+
+    def __init__(self, cookies_file=None):
+        self.cookies_file = cookies_file
+        self.session = requests.Session()
+        self.load_cookies()
+        self.set_headers()
+
+    def load_cookies(self):
+        if not self.cookies_file:
+            return
+        if not os.path.isfile(self.cookies_file):
+            raise NameError('Cannot find cookies file %s' % self.cookies_file)
+        cookie_jar = http.cookiejar.MozillaCookieJar()
+        cookie_jar.load(self.cookies_file)
+        self.session.cookies = cookie_jar
+
+    def set_headers(self):
+        self.session.headers = {'Accept': 'text/html'}
+
+    def get_page(self, url, utf8=False):
+        """ Get HTML page or raise GetPageError exception.
+
+        If content-type header isn't 'text/html' the exception raised as well as
+        when download error occured.
+
+        """
+        try:
+            req = self.session.get(url)
+        except (RequestException, BaseHTTPError):
+            raise HttpUtils.GetPageError('An exception occured at the http request performing', url)
+        if req.status_code != requests.codes['ok']:
+            raise HttpUtils.GetPageError('HTTP status code: %d' % req.status_code, url)
+        if utf8:
+            req.encoding = 'utf-8'
+        content_type = req.headers['content-type']
+        if content_type.startswith('text/html'):
+            return req.text
+        else:
+            raise HttpUtils.GetPageError('Content type "%s" != "text/html"' % content_type, url)
+
+    @staticmethod
+    def full_url(url, context_url):
+        """ Get full (absolute) URL from arbitrary URL and page where it placed.
+
+        Assume 'context_url' are full url.
+
+        """
+        proto, tail = context_url.split(':', 1)
+        context_base = proto + '://' + tail.lstrip('/').split('/', 1)[0]
+
+        if url.startswith('#'):
+            context_page = context_url.split('#', 1)[0]
+            return context_page + url
+        elif url.startswith('//'):
+            return proto + ':' + url
+        elif url.startswith('/'):
+            return context_base.rstrip('/') + '/' + url.lstrip('/')
+        elif url.startswith(('http://', 'https://', 'ftp://')):
+            return url
+        else:
+            # Need we support relational link like
+            # 'smth.html', './smth.html', or '../smth.html'?
+            raise NameError('bad url in \'full_url\':\nurl: ' + url + '\n')
+
+
+class Notabenoid:
+    """ http://notabenoid.org """
+
+    books = {
+        'whatif': {
+            'url': 'http://notabenoid.org/book/41531',
+            'filter_re': r'^what-if #\d+\.? .*$',
+        },
+        'xkcd': {
+            'url': 'http://notabenoid.org/book/45995',
+            'filter_re': None,
+        },
+    }
+
+    def __init__(self, book_name, http_utils):
+        self.book_name = book_name
+        if self.book_name not in Notabenoid.books.keys():
+            raise NameError('Unknown Notabenoid book: ' + self.book_name)
+        self.book = Notabenoid.books[book_name]
+        self.http_utils = http_utils
+
+    def get_list_of_articles(self, filtering=False):
+        articles = []
+        html = self.http_utils.get_page(self.book['url'])
+        doc = lxml.html.document_fromstring(html)
+        links = doc.cssselect('table#Chapters tr td.t a')
+        for link in links:
+            title = link.text
+            url = HttpUtils.full_url(link.get('href'), self.book['url'])
+            article = (title, url)
+            if filtering and self.book['filter_re']:
+                if re.match(self.book['filter_re'], title):
+                    articles.append(article)
+            else:
+                articles.append(article)
+        return articles
+
+    def get_original(self, url):
+        fragments = []
+        html = self.http_utils.get_page(url)
+        doc = lxml.html.document_fromstring(html)
+        for elem in doc.cssselect('table#Tr td.o div p.text'):
+            elem_html = lxml.html.tostring(elem)
+            elem_text = BeautifulSoup(elem_html, 'html.parser').text
+            fragments.append(elem_text)
+        return fragments
+
+    def get_translation(self, url):
+#        fragments = []
+        html = self.http_utils.get_page(url)
+        doc = lxml.html.document_fromstring(html)
+#        for elem in doc.cssselect('table#Tr td.t div p.text'):
+#            elem_html = lxml.html.tostring(elem)
+#            elem_text = BeautifulSoup(elem_html, 'html.parser').text
+#            fragments.append(elem_text)
+#        return fragments
+        groups = []
+        for group_elem in doc.cssselect('table#Tr td.t'):
+            group_id = group_elem.getparent().cssselect('td.o p.info a.ord')[0].text
+            group = {
+                'fragments': [],
+                'id': group_id,
+            }
+            for elem in group_elem.xpath('./div[@id]'):
+                elem_html = lxml.html.tostring(elem.cssselect('p.text')[0])
+                elem_text = BeautifulSoup(elem_html, 'html.parser').text
+                author = elem.cssselect('p.info a.user')[0].text
+                rating = int(elem.cssselect('div.rating a.current')[0].text)
+                fragment = {
+                    'text': elem_text,
+                    'author': author,
+                    'rating': rating,
+                }
+                group['fragments'].append(fragment)
+            groups.append(group)
+        return groups
+
+
+def get_args():
+    """ Check and get arguments. Raise NameErorr when smth went wrong. """
+    if len(sys.argv) != 2:
+        raise NameError('Wrong number of arguments')
+    return {'cookies_file': sys.argv[1]}
+
+
+def main():
+    try:
+        args = get_args()
+    except NameError as exc:
+        logging.critical(str(exc))
+        logging.critical('Usage: %s cookies_file', sys.argv[0])
+        exit(ARGS_ERROR_EXIT_CODE)
+    http_utils = HttpUtils(cookies_file=args['cookies_file'])
+    try:
+        notabenoid = Notabenoid('whatif', http_utils)
+    except HttpUtils.GetPageError as exc:
+        logging.critical(str(exc))
+        exit(HTTP_ERROR_EXIT_CODE)
+    articles = notabenoid.get_list_of_articles(filtering=True)
+    for article in articles:
+        print(str(article))
+    print('')
+    last_article = articles[0]
+    fragments = notabenoid.get_original(last_article[1])
+    for fragment in fragments:
+        print(fragment + '\n')
+#    fragments = notabenoid.get_translation(last_article[1])
+#    for fragment in fragments:
+#        print(fragment + '\n')
+    groups = notabenoid.get_translation(last_article[1])
+    for group in groups:
+        for fragment in group['fragments']:
+            print(fragment['text'])
+            print('%s %s %d\n' % (group['id'], fragment['author'], \
+                fragment['rating']))
+
+
+if __name__ == '__main__':
+    main()

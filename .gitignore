@@ -1,0 +1,6 @@
+*.html
+*.md
+!README.md
+.*.sw[a-z]
+__pycache__
+cookies.txt
