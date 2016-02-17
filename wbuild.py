@@ -140,14 +140,8 @@ class Notabenoid:
         return fragments
 
     def get_translation(self, url):
-#        fragments = []
         html = self.http_utils.get_page(url)
         doc = lxml.html.document_fromstring(html)
-#        for elem in doc.cssselect('table#Tr td.t div p.text'):
-#            elem_html = lxml.html.tostring(elem)
-#            elem_text = BeautifulSoup(elem_html, 'html.parser').text
-#            fragments.append(elem_text)
-#        return fragments
         groups = []
         for group_elem in doc.cssselect('table#Tr td.t'):
             group_id = group_elem.getparent().cssselect('td.o p.info a.ord')[0].text
@@ -198,9 +192,6 @@ def main():
     fragments = notabenoid.get_original(last_article[1])
     for fragment in fragments:
         print(fragment + '\n')
-#    fragments = notabenoid.get_translation(last_article[1])
-#    for fragment in fragments:
-#        print(fragment + '\n')
     groups = notabenoid.get_translation(last_article[1])
     for group in groups:
         for fragment in group['fragments']:
