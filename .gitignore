@@ -1,6 +1,7 @@
 *.html
 *.md
 !README.md
+!FUTURE_DESIGN.md
 .*.sw[a-z]
 __pycache__
 cookies.txt
