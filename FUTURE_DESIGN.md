@@ -2,38 +2,44 @@ wbuild.py subcommand [options]
 
 ## Subcommands
 
-wbuild.py upgrade
-    Update the script itself (git pull).
-    Send admin notification if some error occured a first time.
-    Exit code is success if new version is available, fail otherwise (1).
+`wbuild.py upgrade`
 
-wbuild.py regen
-    Regenerate all found articles.
-    Send an admin notification about the differences.
-    Exit code is success if all right, fail otherwise (1).
+Update the script itself (git pull).
+Send admin notification if some error occured a first time.
+Exit code is success if new version is available, fail otherwise (1).
 
-wbuild.py acheck
-    Check for new article.
-    Don't send any notification about new article.
-    Send an admin notification if some error occured a first time.
-    Exit code is success if new article found, fail otherwise (1)
-    or when error occured (2, 3, etc).
+`wbuild.py regen`
 
-wbuild.py dcheck
-    Check for differences in all found articles.
-    Send admin notification about the differences.
-    Send admin notification if some error occured a first time.
-    Exit code is success if the differences found, fail otherwise (1)
-    or when error occured (2, 3, etc).
+Regenerate all found articles.
+Send an admin notification about the differences.
+Exit code is success if all right, fail otherwise (1).
 
-wbuild.py build
-    Build last article.
-    Send an admin notification with built article.
-    Send admin notification if some error occured a first time.
-    Exit code is success if all right, fail otherwise (2, 3, etc).
+`wbuild.py acheck`
 
-wbuild.py upload
-    TODO: upload to Notabenoid.
+Check for new article.
+Don't send any notification about new article.
+Send an admin notification if some error occured a first time.
+Exit code is success if new article found, fail otherwise (1)
+or when error occured (2, 3, etc).
+
+`wbuild.py dcheck`
+
+Check for differences in all found articles.
+Send admin notification about the differences.
+Send admin notification if some error occured a first time.
+Exit code is success if the differences found, fail otherwise (1)
+or when error occured (2, 3, etc).
+
+`wbuild.py build`
+
+Build last article.
+Send an admin notification with built article.
+Send admin notification if some error occured a first time.
+Exit code is success if all right, fail otherwise (2, 3, etc).
+
+`wbuild.py upload`
+
+TODO: upload to Notabenoid.
 
 ## Options
 
