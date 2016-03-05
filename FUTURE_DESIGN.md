@@ -1,5 +1,11 @@
 wbuild.py subcommand [options]
 
+## TODO's
+
+There are original articles, translated articles in progress (on Notabenoid),
+translated articles on our website. So terms like 'build' and 'upload' don't
+self-explanatory.
+
 ## Subcommands
 
 `wbuild.py upgrade`
@@ -32,7 +38,7 @@ or when error occured (2, 3, etc).
 
 `wbuild.py build`
 
-Build last article.
+Build a last article.
 Send an admin notification with built article.
 Send admin notification if some error occured a first time.
 Exit code is success if all right, fail otherwise (2, 3, etc).
@@ -40,6 +46,11 @@ Exit code is success if all right, fail otherwise (2, 3, etc).
 `wbuild.py upload`
 
 TODO: upload to Notabenoid.
+
+`wbuild.py draft`
+
+TODO: Grab a last article from Notabenoid and build draft on separate website
+for convenient reading. To be invoked from cron.
 
 ## Options
 
