@@ -5,12 +5,12 @@ The tool for grabbing Russian translation of [What If?](http://what-if.xkcd.com)
 ## Usage
 
 ```
-$ ./wbuild.py cookies.txt
+$ ./wbuild.py [options] cookies.txt
 ```
 
-A cookies file should be in Netscape compatible format. A list of trasnlations, original fragments, translated fragments will be printed to stdout.
+A cookies file should be in Netscape compatible format. By default the script will print only last top rated translation of each fragment. Add `--all` option to print a list of articles, original fragments and all translations of each fragment.
 
-A script output can be diff'ed with files produced by [What If? grabbing tool](https://github.com/whatifrussian/what_if_parse).
+A script `--all` output can be diff'ed with files produced by [What If? grabbing tool](https://github.com/whatifrussian/what_if_parse).
 
 ## License
 
