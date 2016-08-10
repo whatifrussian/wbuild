@@ -152,11 +152,14 @@ class Notabenoid:
             }
             for elem in group_elem.xpath('./div[@id]'):
                 elem_html = lxml.html.tostring(elem.cssselect('p.text')[0])
-                elem_text = BeautifulSoup(elem_html, 'html.parser').text
+                text = BeautifulSoup(elem_html, 'html.parser').text
+                text = re.sub(r'(^|\n)<-->', '\g<1>    ', text)
+                text = re.sub(r'^TODO: replace \'<-->\' with \'    \'\n', '', text)
+                text = re.sub(r'\n\[labels\].+\[/labels\]', '', text, flags=re.DOTALL)
                 author = elem.cssselect('p.info a.user')[0].text
                 rating = int(elem.cssselect('div.rating a.current')[0].text)
                 fragment = {
-                    'text': elem_text,
+                    'text': text,
                     'author': author,
                     'rating': rating,
                 }
