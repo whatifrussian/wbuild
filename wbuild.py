@@ -10,6 +10,7 @@ import lxml.html
 import requests
 from requests.exceptions import RequestException, BaseHTTPError
 from bs4 import BeautifulSoup
+from argparse import ArgumentParser, ArgumentError
 
 
 ARGS_ERROR_EXIT_CODE = 1
@@ -165,39 +166,55 @@ class Notabenoid:
 
 
 def get_args():
-    """ Check and get arguments. Raise NameErorr when smth went wrong. """
-    if len(sys.argv) != 2:
-        raise NameError('Wrong number of arguments')
-    return {'cookies_file': sys.argv[1]}
+    """ Check and get arguments. Exit with a message when smth went wrong. """
+    description = 'The tool for grabbing Russian translation of What If? articles from Notabenoid.'
+    parser = ArgumentParser(description=description)
+    parser.add_argument('--all', action='store_true',
+        help='Print list of articles, originals and all translations\' variants. \n' +
+        'By default only last of top rated translations\' variants will be printed.')
+    parser.add_argument('cookies_file')
+    try:
+        args = parser.parse_args()
+    except ArgumentError as exc:
+        logging.critical(str(exc))
+        parser.print_usage(file=sys.stderr)
+        exit(ARGS_ERROR_EXIT_CODE)
+    return args
 
 
 def main():
-    try:
-        args = get_args()
-    except NameError as exc:
-        logging.critical(str(exc))
-        logging.critical('Usage: %s cookies_file', sys.argv[0])
-        exit(ARGS_ERROR_EXIT_CODE)
-    http_utils = HttpUtils(cookies_file=args['cookies_file'])
+    args = get_args()
+    http_utils = HttpUtils(cookies_file=args.cookies_file)
     try:
         notabenoid = Notabenoid('whatif', http_utils)
     except HttpUtils.GetPageError as exc:
         logging.critical(str(exc))
         exit(HTTP_ERROR_EXIT_CODE)
     articles = notabenoid.get_list_of_articles(filtering=True)
-    for article in articles:
-        print(str(article))
-    print('')
+    if args.all:
+        for article in articles:
+            print(str(article))
+        print('')
     last_article = articles[0]
-    fragments = notabenoid.get_original(last_article[1])
-    for fragment in fragments:
-        print(fragment + '\n')
+    if args.all:
+        fragments = notabenoid.get_original(last_article[1])
+        for fragment in fragments:
+            print(fragment + '\n')
     groups = notabenoid.get_translation(last_article[1])
-    for group in groups:
-        for fragment in group['fragments']:
-            print(fragment['text'])
-            print('%s %s %d\n' % (group['id'], fragment['author'], \
-                fragment['rating']))
+    for i, group in enumerate(groups):
+        maybe_newline = ('\n' if i < len(groups) - 1 else '')
+        if args.all:
+            for fragment in group['fragments']:
+                print(fragment['text'])
+                print('%s %s %d%s' % (group['id'], fragment['author'],
+                    fragment['rating'], maybe_newline))
+        else:
+            top_rating = 0
+            last_top_rated = None
+            for fragment in group['fragments']:
+                if fragment['rating'] >= top_rating:
+                    last_top_rated = fragment
+            print(fragment['text'] + maybe_newline)
 
 
 if __name__ == '__main__':
