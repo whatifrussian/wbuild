@@ -203,22 +203,59 @@ def print_all(args, notabenoid):
                 fragment['rating'], maybe_newline))
 
 
+def print_ambiguity(ambiguity):
+    if len(ambiguity) > 0:
+        logging.warn('')
+        logging.warn('Ambiguity fragments')
+        logging.warn('===================')
+    for num, fragments in ambiguity:
+        for fragment in fragments:
+            logging.warn('')
+            logging.warn(fragment['text'])
+            logging.warn('#%d %s %d', num, fragment['author'],
+                fragment['rating'])
+        logging.warn('')
+        logging.warn('========')
+    if len(ambiguity) > 0:
+        logging.warn('')
+        logging.warn('WARNING!')
+        logging.warn('There are ambiguity fragments, last one choosed in each group.')
+        logging.warn('Check the output above to be sure the script selects it right.')
+
+
 def print_top(args, notabenoid):
     articles = notabenoid.get_list_of_articles(filtering=True)
     last_article = articles[0]
     groups = notabenoid.get_translation(last_article[1])
+    ambiguity = []
     for i, group in enumerate(groups):
         maybe_newline = ('\n' if i < len(groups) - 1 else '')
         top_rating = 0
-        last_top_rated = None
+        top_rated = []
         for fragment in group['fragments']:
-            if fragment['rating'] >= top_rating:
-                last_top_rated = fragment
+            if fragment['rating'] == top_rating:
+                top_rated.append(fragment)
+            elif fragment['rating'] > top_rating:
+                top_rated = [fragment]
                 top_rating = fragment['rating']
-        print(last_top_rated['text'] + maybe_newline)
+        print(top_rated[-1]['text'] + maybe_newline)
+        if len(top_rated) > 1:
+            ambiguity.append((i, top_rated))
+    print_ambiguity(ambiguity)
+
+
+def prettify_logging_shorter():
+    """ Setup logger format. """
+    # TODO: colors when isatty()
+    root_logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('{message}', style='{')
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
 
 
 def main():
+    prettify_logging_shorter()
     args = get_args()
     http_utils = HttpUtils(cookies_file=args.cookies_file)
     try:
