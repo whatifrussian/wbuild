@@ -214,7 +214,8 @@ def print_top(args, notabenoid):
         for fragment in group['fragments']:
             if fragment['rating'] >= top_rating:
                 last_top_rated = fragment
-        print(fragment['text'] + maybe_newline)
+                top_rating = fragment['rating']
+        print(last_top_rated['text'] + maybe_newline)
 
 
 def main():
