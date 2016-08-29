@@ -185,6 +185,38 @@ def get_args():
     return args
 
 
+def print_all(args, notabenoid):
+    articles = notabenoid.get_list_of_articles(filtering=True)
+    for article in articles:
+        print(str(article))
+    print('')
+    last_article = articles[0]
+    fragments = notabenoid.get_original(last_article[1])
+    for fragment in fragments:
+        print(fragment + '\n')
+    groups = notabenoid.get_translation(last_article[1])
+    for i, group in enumerate(groups):
+        maybe_newline = ('\n' if i < len(groups) - 1 else '')
+        for fragment in group['fragments']:
+            print(fragment['text'])
+            print('%s %s %d%s' % (group['id'], fragment['author'],
+                fragment['rating'], maybe_newline))
+
+
+def print_top(args, notabenoid):
+    articles = notabenoid.get_list_of_articles(filtering=True)
+    last_article = articles[0]
+    groups = notabenoid.get_translation(last_article[1])
+    for i, group in enumerate(groups):
+        maybe_newline = ('\n' if i < len(groups) - 1 else '')
+        top_rating = 0
+        last_top_rated = None
+        for fragment in group['fragments']:
+            if fragment['rating'] >= top_rating:
+                last_top_rated = fragment
+        print(fragment['text'] + maybe_newline)
+
+
 def main():
     args = get_args()
     http_utils = HttpUtils(cookies_file=args.cookies_file)
@@ -193,32 +225,10 @@ def main():
     except HttpUtils.GetPageError as exc:
         logging.critical(str(exc))
         exit(HTTP_ERROR_EXIT_CODE)
-    articles = notabenoid.get_list_of_articles(filtering=True)
     if args.all:
-        for article in articles:
-            print(str(article))
-        print('')
-    last_article = articles[0]
-    if args.all:
-        fragments = notabenoid.get_original(last_article[1])
-        for fragment in fragments:
-            print(fragment + '\n')
-    groups = notabenoid.get_translation(last_article[1])
-    for i, group in enumerate(groups):
-        maybe_newline = ('\n' if i < len(groups) - 1 else '')
-        if args.all:
-            for fragment in group['fragments']:
-                print(fragment['text'])
-                print('%s %s %d%s' % (group['id'], fragment['author'],
-                    fragment['rating'], maybe_newline))
-        else:
-            top_rating = 0
-            last_top_rated = None
-            for fragment in group['fragments']:
-                if fragment['rating'] >= top_rating:
-                    last_top_rated = fragment
-            print(fragment['text'] + maybe_newline)
-
+        print_all(args, notabenoid)
+    else:
+        print_top(args, notabenoid)
 
 if __name__ == '__main__':
     main()
