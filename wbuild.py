@@ -226,6 +226,7 @@ def print_ambiguity(ambiguity):
 def print_top(args, notabenoid):
     articles = notabenoid.get_list_of_articles(filtering=True)
     last_article = articles[0]
+    orig_fragments = notabenoid.get_original(last_article[1])
     groups = notabenoid.get_translation(last_article[1])
     ambiguity = []
     for i, group in enumerate(groups):
@@ -238,7 +239,13 @@ def print_top(args, notabenoid):
             elif fragment['rating'] > top_rating:
                 top_rated = [fragment]
                 top_rating = fragment['rating']
-        print(top_rated[-1]['text'] + maybe_newline)
+        if len(top_rated) > 0:
+            print(top_rated[-1]['text'] + maybe_newline)
+        else:
+            logging.warn('')
+            logging.warn('WARNING!')
+            logging.warn('The original fragment was used because no translations found for it.')
+            print(orig_fragments[i] + maybe_newline)
         if len(top_rated) > 1:
             ambiguity.append((i, top_rated))
     print_ambiguity(ambiguity)
