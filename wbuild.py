@@ -113,12 +113,15 @@ class Notabenoid:
             raise NameError('Unknown Notabenoid book: ' + self.book_name)
         self.book = Notabenoid.books[book_name]
         self.http_utils = http_utils
+        self.list_doc = None
+        self.article_doc = None
 
     def get_list_of_articles(self, filtering=False):
+        if self.list_doc is None:
+            html = self.http_utils.get_page(self.book['url'])
+            self.list_doc = lxml.html.document_fromstring(html)
         articles = []
-        html = self.http_utils.get_page(self.book['url'])
-        doc = lxml.html.document_fromstring(html)
-        links = doc.cssselect('table#Chapters tr td.t a')
+        links = self.list_doc.cssselect('table#Chapters tr td.t a')
         for link in links:
             title = link.text
             url = HttpUtils.full_url(link.get('href'), self.book['url'])
@@ -131,20 +134,23 @@ class Notabenoid:
         return articles
 
     def get_original(self, url):
+        if self.article_doc is None:
+            html = self.http_utils.get_page(url)
+            self.article_doc = lxml.html.document_fromstring(html)
         fragments = []
-        html = self.http_utils.get_page(url)
-        doc = lxml.html.document_fromstring(html)
-        for elem in doc.cssselect('table#Tr td.o div p.text'):
+        for elem in self.article_doc.cssselect('table#Tr td.o div p.text'):
             elem_html = lxml.html.tostring(elem)
             elem_text = BeautifulSoup(elem_html, 'html.parser').text
             fragments.append(elem_text)
         return fragments
 
     def get_translation(self, url):
-        html = self.http_utils.get_page(url)
-        doc = lxml.html.document_fromstring(html)
+        if self.article_doc is None:
+            html = self.http_utils.get_page(url)
+            self.article_doc = lxml.html.document_fromstring(html)
+
         groups = []
-        for group_elem in doc.cssselect('table#Tr td.t'):
+        for group_elem in self.article_doc.cssselect('table#Tr td.t'):
             group_id = group_elem.getparent().cssselect('td.o p.info a.ord')[0].text
             group = {
                 'fragments': [],
