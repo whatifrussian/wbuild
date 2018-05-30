@@ -144,9 +144,14 @@ class Notabenoid:
             fragments.append(elem_text)
         return fragments
 
-    def get_translation(self, url):
-        if self.article_doc is None:
-            html = self.http_utils.get_page(url)
+    def get_translation(self, url, page = None):
+        if self.article_doc is None or page is not None:
+            if page:
+                print(url + page)
+                html = self.http_utils.get_page(url + page)
+            else:
+                html = self.http_utils.get_page(url)
+
             self.article_doc = lxml.html.document_fromstring(html)
 
         groups = []
@@ -171,6 +176,10 @@ class Notabenoid:
                 }
                 group['fragments'].append(fragment)
             groups.append(group)
+        next_pages = self.article_doc.cssselect('div#pages-bottom p.n a')
+        if len(next_pages):
+            print(next_pages[0].get('href'))
+            groups.extend(self.get_translation(url, next_pages[0].get('href')))
         return groups
 
 
