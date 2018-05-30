@@ -147,7 +147,6 @@ class Notabenoid:
     def get_translation(self, url, page = None):
         if self.article_doc is None or page is not None:
             if page:
-                print(url + page)
                 html = self.http_utils.get_page(url + page)
             else:
                 html = self.http_utils.get_page(url)
