@@ -176,9 +176,9 @@ class Notabenoid:
                 }
                 group['fragments'].append(fragment)
             groups.append(group)
+
         next_pages = self.article_doc.cssselect('div#pages-bottom p.n a')
         if len(next_pages):
-            print(next_pages[0].get('href'))
             groups.extend(self.get_translation(url, next_pages[0].get('href')))
         return groups
 
