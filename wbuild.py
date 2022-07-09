@@ -219,22 +219,24 @@ def print_all(args, notabenoid):
 
 def print_ambiguity(ambiguity):
     if len(ambiguity) > 0:
-        logging.warn('')
-        logging.warn('Ambiguity fragments')
-        logging.warn('===================')
+        logging.warning('')
+        logging.warning('Ambiguity fragments')
+        logging.warning('===================')
     for num, fragments in ambiguity:
         for fragment in fragments:
-            logging.warn('')
-            logging.warn(fragment['text'])
-            logging.warn('#%d %s %d', num, fragment['author'],
+            logging.warning('')
+            logging.warning(fragment['text'])
+            logging.warning('#%d %s %d', num, fragment['author'],
                 fragment['rating'])
-        logging.warn('')
-        logging.warn('========')
+        logging.warning('')
+        logging.warning('========')
     if len(ambiguity) > 0:
-        logging.warn('')
-        logging.warn('WARNING!')
-        logging.warn('There are ambiguity fragments, last one choosed in each group.')
-        logging.warn('Check the output above to be sure the script selects it right.')
+        logging.warning('')
+        logging.warning('WARNING!')
+        logging.warning(
+            'There are ambiguity fragments, last one choosed in each group.')
+        logging.warning(
+            'Check the output above to be sure the script selects it right.')
 
 
 def print_top(args, notabenoid):
@@ -256,9 +258,10 @@ def print_top(args, notabenoid):
         if len(top_rated) > 0:
             print(top_rated[-1]['text'] + maybe_newline)
         else:
-            logging.warn('')
-            logging.warn('WARNING!')
-            logging.warn('The original fragment was used because no translations found for it.')
+            logging.warning('')
+            logging.warning('WARNING!')
+            logging.warning('The original fragment was used because no ' +
+                            'translations found for it.')
             print(orig_fragments[i] + maybe_newline)
         if len(top_rated) > 1:
             ambiguity.append((i, top_rated))
