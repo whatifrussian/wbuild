@@ -8,9 +8,9 @@ The tool for grabbing Russian translation of [What If?][1] articles from
 
 ## Usage
 
-Get a cookies file in the Netscape compatible format. I’m using the [Cookies
-Manager+][3] addon for Firefox (and replace `%2F` in the PATH field with `/`,
-see [here][4]).
+Get a cookies file in the Netscape compatible format. Use an addon for your Web
+browser to extract the cookies file. You can use the `extract_cookies.sh`
+script from this repository for Firefox.
 
 Run the script:
 
@@ -24,9 +24,6 @@ and all translations of each fragment.
 
 A script `--all` output can be diff'ed with files produced by [What If?
 grabbing tool](https://github.com/whatifrussian/what_if_parse).
-
-[3]: https://addons.mozilla.org/en-US/firefox/addon/cookies-manager-plus/
-[4]: https://github.com/vanowm/FirefoxCookiesManagerPlus/issues/124
 
 ## License
 
