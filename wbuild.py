@@ -10,7 +10,8 @@ import lxml.html
 import requests
 from requests.exceptions import RequestException, BaseHTTPError
 from bs4 import BeautifulSoup
-from argparse import ArgumentParser, ArgumentError
+import argparse
+import textwrap
 
 
 ARGS_ERROR_EXIT_CODE = 1
@@ -19,7 +20,9 @@ HTTP_ERROR_EXIT_CODE = 2
 
 class HttpUtils:
     class GetPageError(Exception):
-        """ The exception raised when smth went wrong in 'get_page' function. """
+        """
+        The exception raised when smth went wrong in 'get_page' function.
+        """
         def __init__(self, desc, url):
             super().__init__(desc, url)
             self.desc = desc
@@ -48,32 +51,35 @@ class HttpUtils:
         self.session.headers = {'Accept': 'text/html'}
 
     def get_page(self, url, utf8=False):
-        """ Get HTML page or raise GetPageError exception.
+        """
+        Get HTML page or raise GetPageError exception.
 
-        If content-type header isn't 'text/html' the exception raised as well as
-        when download error occured.
-
+        If content-type header isn't 'text/html' the exception raised as well
+        as when download error occured.
         """
         try:
             req = self.session.get(url)
         except (RequestException, BaseHTTPError):
-            raise HttpUtils.GetPageError('An exception occured at the http request performing', url)
+            raise HttpUtils.GetPageError(
+                'An exception occured at the http request performing', url)
         if req.status_code != requests.codes['ok']:
-            raise HttpUtils.GetPageError('HTTP status code: %d' % req.status_code, url)
+            raise HttpUtils.GetPageError(
+                'HTTP status code: %d' % req.status_code, url)
         if utf8:
             req.encoding = 'utf-8'
         content_type = req.headers['content-type']
         if content_type.startswith('text/html'):
             return req.text
         else:
-            raise HttpUtils.GetPageError('Content type "%s" != "text/html"' % content_type, url)
+            raise HttpUtils.GetPageError(
+                'Content type "%s" != "text/html"' % content_type, url)
 
     @staticmethod
     def full_url(url, context_url):
-        """ Get full (absolute) URL from arbitrary URL and page where it placed.
+        """
+        Get full (absolute) URL from arbitrary URL and page where it placed.
 
         Assume 'context_url' are full url.
-
         """
         proto, tail = context_url.split(':', 1)
         context_base = proto + '://' + tail.lstrip('/').split('/', 1)[0]
@@ -94,7 +100,9 @@ class HttpUtils:
 
 
 class Notabenoid:
-    """ http://notabenoid.org """
+    """
+    http://notabenoid.org
+    """
 
     books = {
         'whatif': {
@@ -144,7 +152,7 @@ class Notabenoid:
             fragments.append(elem_text)
         return fragments
 
-    def get_translation(self, url, page = None):
+    def get_translation(self, url, page=None):
         if self.article_doc is None or page is not None:
             if page:
                 html = self.http_utils.get_page(url + page)
@@ -155,7 +163,8 @@ class Notabenoid:
 
         groups = []
         for group_elem in self.article_doc.cssselect('table#Tr td.t'):
-            group_id = group_elem.getparent().cssselect('td.o p.info a.ord')[0].text
+            group_id = group_elem.getparent().cssselect(
+                'td.o p.info a.ord')[0].text
             group = {
                 'fragments': [],
                 'id': group_id,
@@ -163,9 +172,11 @@ class Notabenoid:
             for elem in group_elem.xpath('./div[@id]'):
                 elem_html = lxml.html.tostring(elem.cssselect('p.text')[0])
                 text = BeautifulSoup(elem_html, 'html.parser').text
-                text = re.sub(r'(^|\n)<-->', '\g<1>    ', text)
-                text = re.sub(r'^TODO: replace \'<-->\' with \'    \'\n', '', text)
-                text = re.sub(r'\n\[labels\].+\[/labels\]', '', text, flags=re.DOTALL)
+                text = re.sub(r'(^|\n)<-->', r'\g<1>    ', text)
+                text = re.sub(r'^TODO: replace \'<-->\' with \'    \'\n', '',
+                              text)
+                text = re.sub(r'\n\[labels\].+\[/labels\]', '', text,
+                              flags=re.DOTALL)
                 author = elem.cssselect('p.info a.user')[0].text
                 rating = int(elem.cssselect('div.rating a.current')[0].text)
                 fragment = {
@@ -182,17 +193,51 @@ class Notabenoid:
         return groups
 
 
+def format_help(s):
+    """
+    Remove indentation and add an empty line at the end.
+    """
+    return textwrap.dedent(s.lstrip('\n')) + '\n'
+
+
 def get_args():
     """ Check and get arguments. Exit with a message when smth went wrong. """
-    description = 'The tool for grabbing Russian translation of What If? articles from Notabenoid.'
-    parser = ArgumentParser(description=description)
-    parser.add_argument('--all', action='store_true',
-        help='Print list of articles, originals and all translations\' variants. \n' +
-        'By default only last of top rated translations\' variants will be printed.')
+    parser = argparse.ArgumentParser(
+        description=format_help(
+            """
+            The tool for grabbing Russian translation of What If? articles from
+            Notabenoid.
+            """),
+        formatter_class=argparse.RawTextHelpFormatter,
+        add_help=False)
+
+    # Add the --help argument explicitly to format its message
+    # in accordance to other ones: start from a capital letter
+    # and leave an empty line at the end.
+    parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help=format_help(
+                """
+                Show this help message and exit.
+                """))
+
+    parser.add_argument(
+        '--all',
+        action='store_true',
+        help=format_help(
+            """
+            Print list of articles, originals and all translations' variants.
+
+            By default only last of top rated translations' variants will be
+            printed.
+            """))
+
     parser.add_argument('cookies_file')
     try:
         args = parser.parse_args()
-    except ArgumentError as exc:
+    except argparse.ArgumentError as exc:
         logging.critical(str(exc))
         parser.print_usage(file=sys.stderr)
         exit(ARGS_ERROR_EXIT_CODE)
@@ -214,7 +259,7 @@ def print_all(args, notabenoid):
         for fragment in group['fragments']:
             print(fragment['text'])
             print('%s %s %d%s' % (group['id'], fragment['author'],
-                fragment['rating'], maybe_newline))
+                  fragment['rating'], maybe_newline))
 
 
 def print_ambiguity(ambiguity):
@@ -227,7 +272,7 @@ def print_ambiguity(ambiguity):
             logging.warning('')
             logging.warning(fragment['text'])
             logging.warning('#%d %s %d', num, fragment['author'],
-                fragment['rating'])
+                            fragment['rating'])
         logging.warning('')
         logging.warning('========')
     if len(ambiguity) > 0:
@@ -291,6 +336,7 @@ def main():
         print_all(args, notabenoid)
     else:
         print_top(args, notabenoid)
+
 
 if __name__ == '__main__':
     main()
